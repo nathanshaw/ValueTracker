@@ -1,0 +1,10 @@
+ValueTrackerDouble                          KEYWORD1
+ValueTrackerFloat                           KEYWORD1
+
+setUpdateFactor                             KEYWORD2
+getMin                                      KEYWORD2
+getMax                                      KEYWORD2
+getAvg                                      KEYWORD2
+getRAvg                                     KEYWORD2
+getScaled                                   KEYWORD2
+

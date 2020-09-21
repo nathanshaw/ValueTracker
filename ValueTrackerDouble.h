@@ -9,26 +9,39 @@ class ValueTrackerDouble() {
       void update();
 
       double getPosDelta();
-      double getMin(){return min_recorded;};
-      double getMax(){return max_recorded;};
-      double getAvg(){return average_val;};
 
-      double getScaledValue();
+      double getMin(bool reset);
+      double getMin(){getMin(false);};
+
+      double getMax(bool reset);
+      double getMax(){getMax(false);};
+
+      double getAvg(bool reset);
+      double getAvg(){getAvg(false)};
+
+      double getRAvg(bool reset);
+      double getRAvg(){getRAvg(false)};
+
+      double getScaled();
 
   private:
-    double min_recorded =  99999.9;
-    double max_recorded = -99999.9;
+    double min_recorded =                   99999.9;
+    double max_recorded =                   -99999.9;
 
-    double average_val = 0.0;
-    uint64_t num_values = 0;  // how many values are in the "average_val" calculator
+    /////////// average
+    double ravg_val =                      0.0;
+    double totals =                         0.0;
 
-    double pos_delta = 0.0;
+    // how many values are in the "average_val" calculator
+    uint64_t num_values =                   0;
+    double pos_delta =                      0.0;
+
     double &val;
-    double _last_val;
+    double last_val;
 
     // how much will the new value effect the min/max values?
     // should be set to 1.0 under most circumstances
-    double factor = 1.0;
+    double ravg_factor =                         1.0;
 }
 
 ValueTrackerDouble(double &val) {
@@ -36,12 +49,13 @@ ValueTrackerDouble(double &val) {
     val = _val;
     min_recorded = _val;
     max_recorded = _val;
-    average_val = _val;
+    ravg_val = _val;
+    totals = _val;
     num_values++;
 };
 
-double getScaledValue() {
- return (val - min_recorded) / max_recorded; 
+double getScaled() {
+ return (val - min_recorded) / max_recorded;
 }
 
 void ValueTrackerDouble::update() {
@@ -55,7 +69,7 @@ void ValueTrackerDouble::update() {
     }
 
     // min_value update /////////////////////////////////
-    if (val > min_recorded) {
+    if (val < min_recorded) {
         if (factor != 1.0) {
             min_recorded = (min_recorded * (1.0 - factor)) + (val * factor);
         } else {
@@ -66,12 +80,28 @@ void ValueTrackerDouble::update() {
     // take the running average and multiple it against now many readings there have
     // been thus far, then add current value and divide by total number of readings
     // including current reading.
-    average_val = ((average_val * num_values) + val) / (num_values + 1);
-    num_values++;
+    ravg_val = (last_val + val) * ravg_factor;
+
+    total += val;
+
+    if (average_active || rolling_average_active == true) {
+        num_values++;
+    }
 
     // pos delta update
-    delta = val - last_val;
+    if (pos_delta_active == true) {
+        delta = val - last_val;
+    }
     last_val = val;
+}
+
+double ValueTrackerDouble::getAverage() {
+    return total / num_values;
+}
+
+double ValueTrackerDouble::resetAverage() {
+    total = 0;
+
 }
 
 double ValueTrackerDouble::getPosDelta() {
