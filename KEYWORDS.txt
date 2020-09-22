@@ -7,4 +7,5 @@ getMax                                      KEYWORD2
 getAvg                                      KEYWORD2
 getRAvg                                     KEYWORD2
 getScaled                                   KEYWORD2
-
+reset                                       KEYWORD2
+update                                      KEYWORD2
