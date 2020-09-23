@@ -10,6 +10,8 @@ class ValueTrackerFloat {
       void reset();
 
       float getPosDelta();
+      float getNegDelta();
+      float getDelta(){return delta;};
 
       float getMin(bool reset);
       float getMin(){return getMin(false);};
@@ -22,6 +24,8 @@ class ValueTrackerFloat {
 
       float getRAvg(bool reset);
       float getRAvg(){return getRAvg(false);};
+
+      float getLastVal(){return last_val;};
 
       float getScaled();
 
@@ -153,6 +157,13 @@ float ValueTrackerFloat::getRAvg(bool reset) {
 
 float ValueTrackerFloat::getPosDelta() {
     if (delta > 0.0) {
+        return delta;
+    }
+    return 0.0;
+}
+
+float ValueTrackerFloat::getNegDelta() {
+    if (delta < 0.0) {
         return delta;
     }
     return 0.0;

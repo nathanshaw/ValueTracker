@@ -10,6 +10,8 @@ class ValueTrackerDouble {
       void reset();
 
       double getPosDelta();
+      double getNegDelta();
+      double getDelta(){return delta;};
 
       double getMin(bool reset);
       double getMin(){return getMin(false);};
@@ -22,6 +24,8 @@ class ValueTrackerDouble {
 
       double getRAvg(bool reset);
       double getRAvg(){return getRAvg(false);};
+
+      double getLastVal(){return last_val;};
 
       double getScaled();
 
@@ -59,6 +63,10 @@ ValueTrackerDouble::ValueTrackerDouble(double *_val, double lp) {
     avg_val = *_val;
     num_avg_values++;
     low_pass_factor = lp;
+}
+
+void ValueTrackerDouble::getPosDelta() {
+
 }
 
 void ValueTrackerDouble::reset() {
@@ -153,6 +161,13 @@ double ValueTrackerDouble::getRAvg(bool reset) {
 
 double ValueTrackerDouble::getPosDelta() {
     if (delta > 0.0) {
+        return delta;
+    }
+    return 0.0;
+}
+
+double ValueTrackerDouble::getNegDelta() {
+    if (delta < 0.0) {
         return delta;
     }
     return 0.0;
