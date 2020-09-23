@@ -65,10 +65,6 @@ ValueTrackerDouble::ValueTrackerDouble(double *_val, double lp) {
     low_pass_factor = lp;
 }
 
-void ValueTrackerDouble::getPosDelta() {
-
-}
-
 void ValueTrackerDouble::reset() {
     Serial.println("resetting the averages and min/max values for the value tracker double");
     min_recorded = *val;
