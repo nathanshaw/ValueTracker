@@ -30,6 +30,7 @@ class ValueTrackerDouble {
       double getScaled();
 
       void printStats();
+      void print(){printStats();};
 
   private:
     double min_recorded =                   99999.9;

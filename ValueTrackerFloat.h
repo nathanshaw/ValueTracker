@@ -30,6 +30,7 @@ class ValueTrackerFloat {
       float getScaled();
 
       void printStats();
+      void print(){printStats();};
 
   private:
     float min_recorded =                   99999.9;
