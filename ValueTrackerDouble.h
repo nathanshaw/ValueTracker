@@ -3,9 +3,9 @@
 
 class ValueTrackerDouble {
   public:
-      ValueTrackerDouble(double *_val, double lp);
+      ValueTrackerDouble(double *_val, float lp);
+      ValueTrackerDouble(double *_val, float d_rate, uint16_t d_delay, float lp);
       // the update factor will dictate the low_pass filtering amount
-      void setUpdateFactor(double _factor);
       void update();
       void reset();
 
@@ -33,8 +33,8 @@ class ValueTrackerDouble {
       void print(){printStats();};
 
   private:
-    double min_recorded =                   99999.9;
-    double max_recorded =                   -99999.9;
+    double min_recorded;
+    double max_recorded;
 
     /////////// average
     double ravg_val =                      0.0;
@@ -46,16 +46,23 @@ class ValueTrackerDouble {
 
     double *val;
     double last_val;
+    double scaled_val;
 
     // how much will the new value effect the min/max values?
     // should be set to 1.0 under most circumstances
-    double ravg_factor =                   1.0;
     // how much will the new value effect the rolling average?
     // a 1.0 will result in no averaging
     double low_pass_factor =               0.25;
+
+    // min max adjustment rate needed
+
+    // for decaying the min and max values
+    elapsedMillis decay_timer;
+    uint16_t decay_delay = 5000;
+    double   decay_rate  = 0.005;
 };
 
-ValueTrackerDouble::ValueTrackerDouble(double *_val, double lp) {
+ValueTrackerDouble::ValueTrackerDouble(double *_val, float lp) {
     last_val = *_val;
     val = _val;
     min_recorded = *_val;
@@ -63,6 +70,15 @@ ValueTrackerDouble::ValueTrackerDouble(double *_val, double lp) {
     ravg_val = *_val;
     avg_val = *_val;
     num_avg_values++;
+    low_pass_factor = lp;
+}
+
+ValueTrackerDouble::ValueTrackerDouble(double *_val, float d_rate, uint16_t d_delay, float lp) {
+    decay_rate = d_rate;
+    decay_delay = d_delay;
+    min_recorded = *_val;
+    max_recorded = *_val;
+    val = _val;
     low_pass_factor = lp;
 }
 
@@ -87,26 +103,67 @@ void ValueTrackerDouble::printStats() {
 }
 
 double ValueTrackerDouble::getScaled() {
- return (*val - min_recorded) / max_recorded;
+ return scaled_val;
 }
 
 void ValueTrackerDouble::update() {
+    last_val = *val;
+    if (decay_timer > decay_delay) {
+        // decrease based on the difference between min and max
+        if (max_recorded > min_recorded) {
+            Serial.print("decaying values, the difference between values is: ");
+            double diff = (max_recorded - min_recorded) * decay_rate;
+            Serial.println(diff);
+            Serial.print("min/max recorded changed : "); Serial.print(min_recorded);
+            Serial.print("\t");Serial.println(max_recorded);
+            max_recorded = max_recorded - (diff);
+            min_recorded = min_recorded + (diff);
+            Serial.print("                         : "); Serial.print(min_recorded);
+            Serial.print("\t");Serial.println(max_recorded);
+        } else {
+            Serial.println("Not decaying values, max_recorded is not less than min_recorded");
+        }
+        decay_timer = 0;
+    }
     // max_recorded update //////////////////////////////
+    double mm_lpf = 0.15;
     if (*val > max_recorded) {
-        if (ravg_factor != 1.0) {
-            max_recorded = (max_recorded * (1.0 - ravg_factor)) + (*val * ravg_factor);
+        if (low_pass_factor != 1.0) {
+            // TODO - i think i need a different value for the min/ax low_padd_factor
+            // Serial.print("max_recorded changed from x -> x:\t");Serial.print(max_recorded);
+            max_recorded = (max_recorded * (1.0 - mm_lpf)) + (*val * mm_lpf);
+            // Serial.print("\t->\t");Serial.println(max_recorded);
+            *val = max_recorded;
+            scaled_val = 1.0;
         } else {
             max_recorded = *val;
+            scaled_val = 1.0;
         }
     }
-    // min_value update /////////////////////////////////
-    if (*val < min_recorded) {
-        if (ravg_factor != 1.0) {
-            min_recorded = (min_recorded * (1.0 - ravg_factor)) + (*val * ravg_factor);
+    else if (*val < min_recorded) {
+        // min_value update /////////////////////////////////
+        if (low_pass_factor != 1.0) {
+            // Serial.print("min_recorded changed from x -> x:\t");Serial.print(min_recorded);
+            min_recorded = (min_recorded * (1.0 - mm_lpf)) + (*val * mm_lpf);
+            // Serial.print("\t->\t");Serial.println(min_recorded);
+            *val = min_recorded;
+            scaled_val = 0.0;
         } else {
             min_recorded = *val;
+            scaled_val = 0.0;
+        }
+    } else {
+        scaled_val = (*val - min_recorded) / max_recorded;
+        // Serial.print("scaled value is : ");Serial.println(scaled_val);
+        // Serial.print("min/max is :\t");Serial.print(min_recorded);Serial.print("\t");
+        // Serial.println(max_recorded);
+        if (scaled_val < 0.0) {
+            scaled_val = 0.0;
+        } else if (scaled_val > 1.0) {
+            scaled_val = 1.0;
         }
     }
+
     // average_val update ///////////////////////////////
     // take the running average and multiple it against now many readings there have
     // been thus far, then add current value and divide by total number of readings
@@ -120,7 +177,6 @@ void ValueTrackerDouble::update() {
 
     /////////////// Delta //////////////////////////////
     delta = *val - last_val;
-    last_val = *val;
 }
 
 double ValueTrackerDouble::getMin(bool reset) {
@@ -168,10 +224,6 @@ double ValueTrackerDouble::getNegDelta() {
         return delta;
     }
     return 0.0;
-}
-
-void ValueTrackerDouble::setUpdateFactor(double _factor) {
-    ravg_factor = _factor;
 }
 
 #endif // __VALUE_TRACKER_DOUBLE_H__

@@ -4,6 +4,8 @@
 class ValueTrackerFloat {
   public:
       ValueTrackerFloat(float *_val, float lp);
+      ValueTrackerFloat(float *_val, float d_rate, uint16_t d_delay, float lp);
+
       // the update factor will dictate the low_pass filtering amount
       void setUpdateFactor(float _factor);
       void update();
@@ -49,13 +51,33 @@ class ValueTrackerFloat {
 
     // how much will the new value effect the min/max values?
     // should be set to 1.0 under most circumstances
-    float ravg_factor =                   1.0;
     // how much will the new value effect the rolling average?
     // a 1.0 will result in no averaging
     float low_pass_factor =               0.25;
+
+
+    // for decaying the min and max values
+    elapsedMillis decay_timer;
+    uint16_t decay_delay = 5000;
+    double   decay_rate  = 0.005; 
 };
 
 ValueTrackerFloat::ValueTrackerFloat(float *_val, float lp) {
+    decay_rate = 0.01;
+    decay_delay = 5000;
+    last_val = *_val;
+    val = _val;
+    min_recorded = *_val;
+    max_recorded = *_val;
+    ravg_val = *_val;
+    avg_val = *_val;
+    num_avg_values++;
+    low_pass_factor = lp;
+}
+
+ValueTrackerFloat::ValueTrackerFloat(float *_val, float d_rate, uint16_t d_delay, float lp) {
+    decay_rate = d_rate;
+    decay_delay = d_delay;
     last_val = *_val;
     val = _val;
     min_recorded = *_val;
@@ -91,18 +113,26 @@ float ValueTrackerFloat::getScaled() {
 }
 
 void ValueTrackerFloat::update() {
+    // first decay the min and max values if needed
+    if (decay_timer > decay_delay) {
+        // decrease based on the difference between min and max
+        float diff = max_recorded - min_recorded;
+        max_recorded = max_recorded - (diff * decay_rate);
+        min_recorded = max_recorded + (diff * decay_rate);
+        decay_timer = 0;
+    }
     // max_recorded update //////////////////////////////
     if (*val > max_recorded) {
-        if (ravg_factor != 1.0) {
-            max_recorded = (max_recorded * (1.0 - ravg_factor)) + (*val * ravg_factor);
+        if (low_pass_factor != 1.0) {
+            max_recorded = (max_recorded * (1.0 - low_pass_factor)) + (*val * low_pass_factor);
         } else {
             max_recorded = *val;
         }
     }
     // min_value update /////////////////////////////////
     if (*val < min_recorded) {
-        if (ravg_factor != 1.0) {
-            min_recorded = (min_recorded * (1.0 - ravg_factor)) + (*val * ravg_factor);
+        if (low_pass_factor != 1.0) {
+            min_recorded = (min_recorded * (1.0 - low_pass_factor)) + (*val * low_pass_factor);
         } else {
             min_recorded = *val;
         }
@@ -168,10 +198,6 @@ float ValueTrackerFloat::getNegDelta() {
         return delta;
     }
     return 0.0;
-}
-
-void ValueTrackerFloat::setUpdateFactor(float _factor) {
-    ravg_factor = _factor;
 }
 
 #endif // __VALUE_TRACKER_float_H__
