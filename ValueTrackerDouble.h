@@ -1,10 +1,12 @@
 #ifndef __VALUE_TRACKER_DOUBLE_H__
 #define __VALUE_TRACKER_DOUBLE_H__
 
+#include <String.h>
+
 class ValueTrackerDouble {
   public:
-      ValueTrackerDouble(double *_val, float lp);
-      ValueTrackerDouble(double *_val, float d_rate, uint16_t d_delay, float lp);
+      ValueTrackerDouble(String n, double *_val, float lp);
+      ValueTrackerDouble(String n, double *_val, float d_rate, uint16_t d_delay, float lp);
       // the update factor will dictate the low_pass filtering amount
       void update();
       void reset();
@@ -41,6 +43,8 @@ class ValueTrackerDouble {
 
 
   private:
+
+    String name = "";
     double min_recorded;
     double max_recorded;
     // how quickly to update the min and max values
@@ -76,7 +80,8 @@ class ValueTrackerDouble {
     bool print_decay = false;
 };
 
-ValueTrackerDouble::ValueTrackerDouble(double *_val, float lp) {
+ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float lp) {
+    name = n;
     last_val = *_val;
     val = _val;
     min_recorded = *_val;
@@ -87,7 +92,8 @@ ValueTrackerDouble::ValueTrackerDouble(double *_val, float lp) {
     low_pass_factor = lp;
 }
 
-ValueTrackerDouble::ValueTrackerDouble(double *_val, float d_rate, uint16_t d_delay, float lp) {
+ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float d_rate, uint16_t d_delay, float lp){
+    name = n;
     decay_rate = d_rate;
     decay_delay = d_delay;
     min_recorded = *_val;
@@ -97,7 +103,9 @@ ValueTrackerDouble::ValueTrackerDouble(double *_val, float d_rate, uint16_t d_de
 }
 
 void ValueTrackerDouble::reset() {
-    Serial.println("resetting the averages and min/max values for the value tracker double");
+    Serial.print("resetting the averages and min/max values for the ");
+    Serial.print(name);
+    Serial.println(" value tracker double");
     min_recorded = *val;
     max_recorded = *val;
     num_avg_values = 1;
@@ -106,7 +114,10 @@ void ValueTrackerDouble::reset() {
 }
 
 void ValueTrackerDouble::printStats() {
-    Serial.println("---------- printing value tracker values ----------------");
+    Serial.print("---------- printing ");
+    Serial.print(name);
+    Serial.println(" value tracker stats ----------------");
+    Serial.print("name    : ");Serial.println(name);
     Serial.print("value   : "); Serial.println(*val, 4);
     Serial.print("min/max : ");Serial.print(min_recorded, 4);
     Serial.print("\t");Serial.println(max_recorded, 4);
