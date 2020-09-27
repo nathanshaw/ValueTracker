@@ -13,11 +13,15 @@ class ValueTrackerDouble {
       double getNegDelta();
       double getDelta(){return delta;};
 
+
       double getMin(bool reset);
       double getMin(){return getMin(false);};
 
       double getMax(bool reset);
       double getMax(){return getMax(false);};
+
+      void resetMinMax() {getMin(true);getMax(true);};
+      void setMinMaxUpdateFactor(float mi, float ma);
 
       double getAvg(bool reset);
       double getAvg(){return getAvg(false);};
@@ -28,14 +32,21 @@ class ValueTrackerDouble {
       double getLastVal(){return last_val;};
 
       double getScaled();
+      double getScaledAvg();
 
       void printStats();
       void print(){printStats();};
 
+      void setPrintDecay(bool p){print_decay = p;};
+
+
   private:
     double min_recorded;
     double max_recorded;
-
+    // how quickly to update the min and max values
+    float min_update_factor = 0.5;
+    float max_update_factor = 0.5; 
+    
     /////////// average
     double ravg_val =                      0.0;
     double avg_val  =                      0.0;
@@ -60,6 +71,9 @@ class ValueTrackerDouble {
     elapsedMillis decay_timer;
     uint16_t decay_delay = 5000;
     double   decay_rate  = 0.005;
+
+    /////////////////// Printing //////////////////////
+    bool print_decay = false;
 };
 
 ValueTrackerDouble::ValueTrackerDouble(double *_val, float lp) {
@@ -93,17 +107,24 @@ void ValueTrackerDouble::reset() {
 
 void ValueTrackerDouble::printStats() {
     Serial.println("---------- printing value tracker values ----------------");
-    Serial.print("value   : "); Serial.println(*val);
-    Serial.print("min/max : ");Serial.print(min_recorded);
-    Serial.print("\t");Serial.println(max_recorded);
-    Serial.print("avg/ravg: ");Serial.print(avg_val); 
-    Serial.print("\t");Serial.println(ravg_val);
+    Serial.print("value   : "); Serial.println(*val, 4);
+    Serial.print("min/max : ");Serial.print(min_recorded, 4);
+    Serial.print("\t");Serial.println(max_recorded, 4);
+    Serial.print("avg/ravg: ");Serial.print(avg_val, 4); 
+    Serial.print("\t");Serial.println(ravg_val, 4);
     Serial.print("numvals : ");Serial.println((long)num_avg_values);
-    Serial.print("delta   : ");Serial.println(delta);
+    Serial.print("delta   : ");Serial.println(delta, 4);
 }
 
 double ValueTrackerDouble::getScaled() {
  return scaled_val;
+}
+
+double ValueTrackerDouble::getScaledAvg() {
+    if (max_recorded - min_recorded > 0.0 && ravg_val > min_recorded) {
+        return (ravg_val - min_recorded) / (max_recorded - min_recorded);
+    }
+    return 0.0;
 }
 
 void ValueTrackerDouble::update() {
@@ -111,27 +132,30 @@ void ValueTrackerDouble::update() {
     if (decay_timer > decay_delay) {
         // decrease based on the difference between min and max
         if (max_recorded > min_recorded) {
-            Serial.print("decaying values, the difference between values is: ");
+            dprint(print_decay, "decaying values, the difference between values is: ");
             double diff = (max_recorded - min_recorded) * decay_rate;
-            Serial.println(diff);
-            Serial.print("min/max recorded changed : "); Serial.print(min_recorded);
-            Serial.print("\t");Serial.println(max_recorded);
+            dprintln(print_decay, diff, 4);
+            dprint(print_decay, "min/max recorded changed : "); 
+            dprint(print_decay, min_recorded, 4);
+            dprint(print_decay, "\t");
+            dprintln(print_decay, max_recorded);
             max_recorded = max_recorded - (diff);
             min_recorded = min_recorded + (diff);
-            Serial.print("                         : "); Serial.print(min_recorded);
-            Serial.print("\t");Serial.println(max_recorded);
+            dprint(print_decay, "                         : "); 
+            dprint(print_decay, min_recorded);
+            dprint(print_decay, "\t");
+            dprintln(print_decay, max_recorded);
         } else {
-            Serial.println("Not decaying values, max_recorded is not less than min_recorded");
+            dprintln(print_decay, "Not decaying values, max_recorded is not less than min_recorded");
         }
         decay_timer = 0;
     }
     // max_recorded update //////////////////////////////
-    double mm_lpf = 0.15;
     if (*val > max_recorded) {
-        if (low_pass_factor != 1.0) {
+        if (max_update_factor != 1.0) {
             // TODO - i think i need a different value for the min/ax low_padd_factor
             // Serial.print("max_recorded changed from x -> x:\t");Serial.print(max_recorded);
-            max_recorded = (max_recorded * (1.0 - mm_lpf)) + (*val * mm_lpf);
+            max_recorded = (max_recorded * (1.0 - max_update_factor)) + (*val * max_update_factor);
             // Serial.print("\t->\t");Serial.println(max_recorded);
             *val = max_recorded;
             scaled_val = 1.0;
@@ -142,9 +166,9 @@ void ValueTrackerDouble::update() {
     }
     else if (*val < min_recorded) {
         // min_value update /////////////////////////////////
-        if (low_pass_factor != 1.0) {
+        if (min_update_factor != 1.0) {
             // Serial.print("min_recorded changed from x -> x:\t");Serial.print(min_recorded);
-            min_recorded = (min_recorded * (1.0 - mm_lpf)) + (*val * mm_lpf);
+            min_recorded = (min_recorded * (1.0 - min_update_factor)) + (*val * min_update_factor);
             // Serial.print("\t->\t");Serial.println(min_recorded);
             *val = min_recorded;
             scaled_val = 0.0;
@@ -224,6 +248,11 @@ double ValueTrackerDouble::getNegDelta() {
         return delta;
     }
     return 0.0;
+}
+
+void ValueTrackerDouble::setMinMaxUpdateFactor(float mi, float ma) {
+    min_update_factor = mi;
+    max_update_factor = ma;
 }
 
 #endif // __VALUE_TRACKER_DOUBLE_H__
