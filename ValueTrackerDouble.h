@@ -2,6 +2,7 @@
 #define __VALUE_TRACKER_DOUBLE_H__
 
 #include <String.h>
+#include <PrintUtils.h>
 
 #ifndef LOG_SCALING
 #define LOG_SCALING 0
@@ -66,6 +67,9 @@ class ValueTrackerDouble {
 
       String getName(){return name;};
 
+    double min_recorded;
+    double max_recorded;
+
   private:
 
     String name = "";
@@ -75,8 +79,6 @@ class ValueTrackerDouble {
     /////////// Min/Max //////////////////////////////////
     bool updateMinMax();
     bool decayMinMax();
-    double min_recorded;
-    double max_recorded;
     // how quickly to update the min and max values
     float min_update_factor = 1.0;
     float max_update_factor = 1.0;
@@ -99,7 +101,8 @@ class ValueTrackerDouble {
 
     /////////// scaled ///////////////////////////////////
     double scaled_val;
-    uint8_t scaling_type = LINEAR_SCALING;
+    double last_scaled_val;
+    uint8_t scaling_type = EXP_SCALING;
 
     /////////// min/max decay ////////////////////////////
     // for decaying the min and max values
@@ -259,9 +262,10 @@ void ValueTrackerDouble::update(double v) {
 
 void ValueTrackerDouble::update() {
     decayMinMax();
-    updateMinMax();
     /////////////// scaled val //////////////////////////
+    last_scaled_val = scaled_val;
     scaled_val = calculateScaledValue(*val, min_recorded, max_recorded);
+    updateMinMax();
 
     // average_val update ///////////////////////////////
     // take the running average and multiple it against now many readings there have
@@ -271,13 +275,12 @@ void ValueTrackerDouble::update() {
 
     ////////////// Rolling Average /////////////////////
     // the rolling average is simple low pass filter 
-    ravg_val = calculateRollingAverage(*val, last_val);
+    ravg_val = calculateRollingAverage(scaled_val, last_scaled_val);
 
     /////////////// Delta //////////////////////////////
     delta = calculateDelta(*val, last_val);
     last_val = *val;
 }
-
 
 bool ValueTrackerDouble::decayMinMax() {
     if (decay_timer > decay_delay) {
@@ -299,6 +302,7 @@ bool ValueTrackerDouble::decayMinMax() {
             decay_timer = 0;
             return true;
         } else {
+            max_recorded = min_recorded + 1.0;
             dprintln(print_decay, "Not decaying values, max_recorded is not less than min_recorded");
         }
     }
