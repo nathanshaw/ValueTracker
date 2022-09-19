@@ -2,7 +2,7 @@
 #define __VALUE_TRACKER_DOUBLE_H__
 
 #include <String.h>
-#include <PrintUtils.h>
+#include "../PrintUtils/PrintUtils.h"
 
 #ifndef LOG_SCALING
 #define LOG_SCALING 0
@@ -257,6 +257,7 @@ double ValueTrackerDouble::calculateScaledValue(double v, double min, double max
 //
 
 void ValueTrackerDouble::update(double v) {
+    update();
  Serial.println("WARNING  THIS FUNCTION IS NOT YET IMPLEMENTED"); 
 }
 
