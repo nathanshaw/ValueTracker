@@ -1,8 +1,8 @@
-#ifndef __VALUE_TRACKER_DOUBLE_H__
-#define __VALUE_TRACKER_DOUBLE_H__
+
+#ifndef __VALUE_TRACKER_LONG_H__
+#define __VALUE_TRACKER_LONG_H__
 
 #include <String.h>
-#include <Macros.h>
 #include <PrintUtils.h>
 
 #ifndef LOG_SCALING
@@ -18,13 +18,13 @@
 #endif
 
 // TODO - need to make it a child parent thing
-class ValueTrackerDouble {
+class ValueTrackerLong {
   public:
-      ValueTrackerDouble(String n, double *_val, float lp);
-      ValueTrackerDouble(String n, double *_val, float d_rate, uint16_t d_delay, float lp);
+      ValueTrackerLong(String n, long *_val, float lp);
+      ValueTrackerLong(String n, long *_val, float d_rate, uint16_t d_delay, float lp);
       // the update factor will dictate the low_pass filtering amount
       void update();
-      void update(double v);
+      void update(long v);
       void reset();
 
       double getPosDelta();
@@ -32,11 +32,11 @@ class ValueTrackerDouble {
       double getDelta(){return delta;};
 
 
-      double getMin(bool reset);
-      double getMin(){return getMin(false);};
+      long getMin(bool reset);
+      long getMin(){return getMin(false);};
 
-      double getMax(bool reset);
-      double getMax(){return getMax(false);};
+      long getMax(bool reset);
+      long getMax(){return getMax(false);};
 
       void resetMinMax() {getMin(true);getMax(true);};
       void setMinMaxUpdateFactor(float mi, float ma);
@@ -47,7 +47,7 @@ class ValueTrackerDouble {
       double getRAvg(bool reset);
       double getRAvg(){return getRAvg(false);};
 
-      double getLastVal(){return last_val;};
+      long getLastVal(){return last_val;};
 
       ////////////////// scaling ////////////////
       double getScaled();
@@ -62,20 +62,20 @@ class ValueTrackerDouble {
       void setPrintDecay(bool p){print_decay = p;};
 
       //////////////// utility functions ///////////////
-      double calculateDelta(double v, double last_v);
-      double calculateRollingAverage(double v, double last_v);
-      double calculateScaledValue(double v, double min, double max);
+      double calculateDelta(long v, long last_v);
+      double calculateRollingAverage(long v, long last_v);
+      double calculateScaledValue(long v, long min, long max);
 
       String getName(){return name;};
 
-    double min_recorded;
-    double max_recorded;
+    long min_recorded;
+    long max_recorded;
 
   private:
 
     String name = "";
-    double *val;
-    double last_val;
+    long *val;
+    long last_val;
 
     /////////// Min/Max //////////////////////////////////
     bool updateMinMax();
@@ -113,10 +113,9 @@ class ValueTrackerDouble {
 
     /////////////////// Printing /////////////////////////
     bool print_decay = false;
-
 };
 
-ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float lp) {
+ValueTrackerLong::ValueTrackerLong(String n, long *_val, float lp) {
     name = n;
     last_val = *_val;
     val = _val;
@@ -128,7 +127,7 @@ ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float lp) {
     low_pass_factor = lp;
 }
 
-ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float d_rate, uint16_t d_delay, float lp){
+ValueTrackerLong::ValueTrackerLong(String n, long *_val, float d_rate, uint16_t d_delay, float lp){
     name = n;
     decay_rate = d_rate;
     decay_delay = d_delay;
@@ -138,10 +137,10 @@ ValueTrackerDouble::ValueTrackerDouble(String n, double *_val, float d_rate, uin
     low_pass_factor = lp;
 }
 
-void ValueTrackerDouble::reset() {
+void ValueTrackerLong::reset() {
     Serial.print("resetting the averages and min/max values for the ");
     Serial.print(name);
-    Serial.println(" value tracker double");
+    Serial.println(" value tracker long");
     min_recorded = *val;
     max_recorded = *val;
     num_avg_values = 1;
@@ -149,7 +148,7 @@ void ValueTrackerDouble::reset() {
     ravg_val = *val;
 }
 
-void ValueTrackerDouble::printStats() {
+void ValueTrackerLong::printStats() {
     Serial.print("---------- printing ");
     Serial.print(name);
     Serial.println(" value tracker stats ----------------");
@@ -163,11 +162,11 @@ void ValueTrackerDouble::printStats() {
     Serial.print("delta   : ");Serial.println(delta, 4);
 }
 
-double ValueTrackerDouble::getScaled() {
+double ValueTrackerLong::getScaled() {
  return scaled_val;
 }
 
-double ValueTrackerDouble::getScaledAvg() {
+double ValueTrackerLong::getScaledAvg() {
     if (max_recorded - min_recorded > 0.0 && ravg_val > min_recorded) {
         return (ravg_val - min_recorded) / (max_recorded - min_recorded);
     }
@@ -177,7 +176,7 @@ double ValueTrackerDouble::getScaledAvg() {
 // TODO - big problem, I dont think that the value tracker should operate off pointers,
 // there is no reason to, instead values should be passed into things and the utility 
 // functions should be public.
-bool ValueTrackerDouble::updateMinMax(){
+bool ValueTrackerLong::updateMinMax(){
     // max_recorded update //////////////////////////////
     if (*val > max_recorded) {
         if (max_update_factor != 1.0) {
@@ -210,7 +209,7 @@ bool ValueTrackerDouble::updateMinMax(){
     return false;
 }
 
-double ValueTrackerDouble::calculateScaledValue(double v, double min, double max){
+double ValueTrackerLong::calculateScaledValue(long v, long min, long max){
     double s = 0.0;
     switch (scaling_type) {
         case LINEAR_SCALING:
@@ -225,7 +224,7 @@ double ValueTrackerDouble::calculateScaledValue(double v, double min, double max
             s = s * s;
             break;
         default:
-            Serial.println("WARNING - valueTrackerDouble does not have a valid scaling_type");
+            Serial.println("WARNING - valueTrackerLong does not have a valid scaling_type");
             break;
     }
 
@@ -241,12 +240,12 @@ double ValueTrackerDouble::calculateScaledValue(double v, double min, double max
 // TODO - change the code for the class so that each feature can be turned on and off
 //
 
-void ValueTrackerDouble::update(double v) {
+void ValueTrackerLong::update(long v) {
     update();
  Serial.println("WARNING  THIS FUNCTION IS NOT YET IMPLEMENTED"); 
 }
 
-void ValueTrackerDouble::update() {
+void ValueTrackerLong::update() {
     decayMinMax();
     /////////////// scaled val //////////////////////////
     last_scaled_val = scaled_val;
@@ -268,7 +267,7 @@ void ValueTrackerDouble::update() {
     last_val = *val;
 }
 
-bool ValueTrackerDouble::decayMinMax() {
+bool ValueTrackerLong::decayMinMax() {
     if (decay_timer > decay_delay) {
         // decrease based on the difference between min and max
         if (max_recorded > min_recorded) {
@@ -276,7 +275,7 @@ bool ValueTrackerDouble::decayMinMax() {
             double decay_factor = (max_recorded - min_recorded) * decay_rate;
             dprintln(print_decay, decay_factor, 4);
             dprint(print_decay, "min/max recorded changed : "); 
-            dprint(print_decay, min_recorded, 4);
+            dprint(print_decay, min_recorded);
             dprint(print_decay, "\t");
             dprintln(print_decay, max_recorded);
             max_recorded = max_recorded - (decay_factor);
@@ -295,37 +294,37 @@ bool ValueTrackerDouble::decayMinMax() {
     return false;
 }
 
-double ValueTrackerDouble::calculateDelta(double v, double last_v) {
+double ValueTrackerLong::calculateDelta(long v, long last_v) {
     return v - last_v;
 }
 
-double ValueTrackerDouble::updateAverage() {
+double ValueTrackerLong::updateAverage() {
     avg_val = ((num_avg_values * avg_val) + *val) / (num_avg_values + 1);
     num_avg_values++;
     return avg_val;
 }
 
-double ValueTrackerDouble::calculateRollingAverage(double v, double last_v) {
+double ValueTrackerLong::calculateRollingAverage(long v, long last_v) {
     return (last_v * (1.0 - low_pass_factor)) + (v * low_pass_factor);
 }
 
-double ValueTrackerDouble::getMin(bool reset) {
-    double m = min_recorded;
+long ValueTrackerLong::getMin(bool reset) {
+    long m = min_recorded;
     if (reset == true) {
         min_recorded = *val;
     }
     return m;
 }
 
-double ValueTrackerDouble::getMax(bool reset) {
-    double m = max_recorded;
+long ValueTrackerLong::getMax(bool reset) {
+    long m = max_recorded;
     if (reset == true) {
         max_recorded = *val;
     }
     return m;
 }
 
-double ValueTrackerDouble::getAvg(bool reset) {
+double ValueTrackerLong::getAvg(bool reset) {
     double a = avg_val;
     if (reset == true) {
         avg_val = *val;
@@ -334,7 +333,7 @@ double ValueTrackerDouble::getAvg(bool reset) {
     return a;
 }
 
-double ValueTrackerDouble::getRAvg(bool reset) {
+double ValueTrackerLong::getRAvg(bool reset) {
     double a = ravg_val;
     if (reset == true) {
         ravg_val = *val;
@@ -342,23 +341,23 @@ double ValueTrackerDouble::getRAvg(bool reset) {
     return a;
 }
 
-double ValueTrackerDouble::getPosDelta() {
+double ValueTrackerLong::getPosDelta() {
     if (delta > 0.0) {
        return delta;
     }
     return 0.0;
 }
 
-double ValueTrackerDouble::getNegDelta() {
+double ValueTrackerLong::getNegDelta() {
     if (delta < 0.0) {
         return delta;
     }
     return 0.0;
 }
 
-void ValueTrackerDouble::setMinMaxUpdateFactor(float mi, float ma) {
+void ValueTrackerLong::setMinMaxUpdateFactor(float mi, float ma) {
     min_update_factor = mi;
     max_update_factor = ma;
 }
 
-#endif // __VALUE_TRACKER_DOUBLE_H__
+#endif // __VALUE_TRACKER_LONG_H__
