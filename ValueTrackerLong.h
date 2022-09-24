@@ -4,18 +4,7 @@
 
 #include <String.h>
 #include <PrintUtils.h>
-
-#ifndef LOG_SCALING
-#define LOG_SCALING 0
-#endif
-
-#ifndef LINEAR_SCALING
-#define LINEAR_SCALING 1
-#endif
-
-#ifndef EXP_SCALING
-#define EXP_SCALING 2
-#endif
+#include <Macros.h>
 
 // TODO - need to make it a child parent thing
 class ValueTrackerLong {
